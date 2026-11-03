@@ -3,8 +3,8 @@
 #
 # Cada cliente só faz o que precisa (o papel do IAM na arquitetura do relatório):
 #   dispositivos  -> escrevem só nos próprios tópicos
-#   api           -> lê dispositivos e serviços, publica eventos e comandos
-#   svc-quality   -> lê a telemetria, publica eventos (alertas)
+#   api           -> lê dispositivos, serviços e eventos; publica eventos e comandos
+#   svc-quality   -> lê leituras gravadas, publica alertas
 #   svc-notifier  -> lê eventos de alerta
 #
 # O %u nas regras "pattern" é substituído pelo usuário conectado.
@@ -26,14 +26,17 @@ topic read  smartmilk/device/+/status
 topic read  smartmilk/device/+/alerts
 topic write smartmilk/device/+/cmd
 topic write smartmilk/events/#
+topic read  smartmilk/events/#
 topic read  smartmilk/services/+/status
 # Usado pelo healthcheck do container do broker
 topic read  $SYS/broker/uptime
 
 # ---------- Serviço de qualidade (papel da Lambda) ----------
+# Recebe da api cada leitura nova já gravada (nunca duplicatas) e publica alertas.
 user svc-quality
-topic read  smartmilk/device/+/telemetry
-topic write smartmilk/events/#
+topic read  smartmilk/events/leitura.gravada
+topic write smartmilk/events/alerta.aberto
+topic write smartmilk/events/alerta.encerrado
 
 # ---------- Notificador (papel do SNS) ----------
 user svc-notifier

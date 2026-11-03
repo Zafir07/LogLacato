@@ -49,6 +49,24 @@ class Settings(BaseSettings):
     alert_email_to: str = ""
     notify_min_severity: str = "atencao"
 
+    # Autenticação
+    jwt_secret: str = ""
+    jwt_expire_minutes: int = 480
+    admin_email: str = ""
+    admin_password: str = ""
+    admin_name: str = "Administrador"
+    seed_demo: bool = True
+
+    # Regras de monitoramento (quality)
+    quality_open_after: int = 2  # leituras seguidas fora da faixa para abrir alerta
+    quality_close_after: int = 3  # leituras seguidas de volta (com margem) para encerrar
+    no_data_minutes: int = 5  # viagem em andamento sem leitura válida há X min → alerta
+    invalid_streak: int = 3  # leituras inválidas seguidas → alerta de dados inválidos
+    live_window_s: int = 60  # leitura mais velha que isso não é "tempo real" no painel
+
+    # Arquivos (laudos e anexos)
+    files_dir: str = "/data/files"
+
     # Origens do frontend autorizadas, separadas por vírgula
     cors_origins: str = "http://localhost"
 

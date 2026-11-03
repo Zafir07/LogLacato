@@ -2,7 +2,7 @@
 # na arquitetura em nuvem do relatório.
 #
 # - Única porta HTTP(S) exposta: tudo passa por aqui.
-# - /api, /health, /docs e /ws vão para o serviço "api".
+# - /api (inclui o WebSocket /api/v1/ws), /health e /docs vão para o serviço "api".
 # - O resto é o painel web (arquivos estáticos do frontend, Etapa 6).
 #
 # SITE_ADDRESS (no .env):
@@ -20,7 +20,7 @@
 		-Server
 	}
 
-	@api path /api/* /health /health/* /docs /docs/* /redoc /openapi.json /ws /ws/*
+	@api path /api/* /health /health/* /docs /docs/* /redoc /openapi.json
 	handle @api {
 		reverse_proxy api:8000
 	}

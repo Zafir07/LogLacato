@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Paleta: verde (marca), azul (dados), âmbar/vermelho (atenção/crítico), índigo (SIMULADO). */
+:root {
+  --ground: 243 245 240;
+  --surface: 255 255 255;
+  --sunken: 247 249 246;
+  --line: 220 227 218;
+  --ink: 23 36 29;
+  --muted: 83 98 90;
+  --brand: 30 122 85;
+  --brand-soft: 226 241 232;
+  --brand-ink: 14 90 60;
+  --data: 31 95 173;
+  --data-soft: 230 238 248;
+  --warn: 138 83 0;
+  --warn-soft: 255 242 214;
+  --bad: 180 35 24;
+  --bad-soft: 253 236 234;
+  --sim: 70 81 176;
+  --sim-soft: 236 238 251;
+  --nav: 20 37 28;
+  --nav-ink: 211 227 218;
+  --nav-active: 33 65 47;
+  color-scheme: light;
+}
+.dark {
+  --ground: 14 21 18;
+  --surface: 21 31 26;
+  --sunken: 17 25 21;
+  --line: 40 54 46;
+  --ink: 227 236 230;
+  --muted: 156 176 165;
+  --brand: 76 194 140;
+  --brand-soft: 23 51 38;
+  --brand-ink: 141 226 186;
+  --data: 122 176 242;
+  --data-soft: 22 38 58;
+  --warn: 242 183 85;
+  --warn-soft: 51 39 15;
+  --bad: 244 136 124;
+  --bad-soft: 58 26 23;
+  --sim: 163 172 245;
+  --sim-soft: 31 34 64;
+  --nav: 10 16 13;
+  --nav-ink: 198 215 205;
+  --nav-active: 26 45 35;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-ground text-ink font-sans antialiased;
+  font-size: 15px;
+}
+.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+@layer components {
+  .card { @apply bg-surface border border-line rounded-xl; }
+  .btn { @apply inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-ink dark:text-ground; }
+  .btn-ghost { @apply btn border border-line bg-surface text-ink hover:bg-sunken; }
+  .btn-danger { @apply btn bg-bad text-white hover:opacity-90 dark:text-ground; }
+  .input { @apply h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand; }
+  .label { @apply flex flex-col gap-1.5 text-xs font-semibold text-muted; }
+  .th { @apply px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted whitespace-nowrap; }
+  .td { @apply px-3 py-3 text-sm border-t border-line align-middle; }
+  .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.12em] text-muted; }
+}
+
+.leaflet-container { font-family: inherit; border-radius: 0.75rem; }
