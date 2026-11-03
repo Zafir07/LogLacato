@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require
-from app.api.routes.analytics import Filters, filters, trip_comparison
+from app.api.routes.analytics import Filters, filters, trip_comparison, volume_by_day
 from app.api.routes.trips import trip_summary
 from app.models import Alert, QualitySample, Telemetry, Trip, User
 
@@ -63,7 +63,8 @@ def _note(f: Filters) -> str:
 
 @router.get("/trips.xlsx", summary="Relatório de viagens (Excel)")
 def trips_xlsx(f: Filters = Depends(filters), db: Session = Depends(get_db), user: User = Depends(require("leitura"))):
-    rows = trip_comparison(limit=50, f=f, db=db, _=user)
+    # Chamada direta (sem o limite de 50 da tela): o relatório traz todas as viagens do período.
+    rows = trip_comparison(limit=5000, f=f, db=db, _=user)
     data = [[r["code"], r["status"], r["vehicle_plate"], r["driver_name"], _local(r["departure_at"]),
              r["volume_liters"], r["readings"], r["ph_avg"], r["milk_temp_max"], r["acidity_avg"],
              r["samples_rejected"], r["alerts"], "sim" if r["is_simulated"] else "não",
@@ -71,7 +72,10 @@ def trips_xlsx(f: Filters = Depends(filters), db: Session = Depends(get_db), use
     header = ["Viagem", "Status", "Placa", "Motorista", "Saída", "Volume (L)", "Leituras válidas",
               "pH médio", "Temp. máx. leite (°C)", "Acidez média (°D)", "Coletas recusadas", "Alertas",
               "Simulada", "Última posição GPS"]
-    return _xlsx("viagens.xlsx", [("Viagens", header, data)], _note(f))
+    days = volume_by_day(f=f, db=db, _=user)
+    vol = [[d["day"], d["volume_liters"], d["trips"]] for d in days]
+    return _xlsx("viagens.xlsx", [("Viagens", header, data),
+                                  ("Volume por dia", ["Dia", "Volume (L)", "Viagens"], vol)], _note(f))
 
 
 @router.get("/alerts.xlsx", summary="Histórico de alertas (Excel)")

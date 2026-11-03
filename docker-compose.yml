@@ -39,13 +39,15 @@ services:
 
   # ------------------------------------------------------------ entrada
   proxy:
-    image: caddy:2
+    # Compila o painel React (frontend/) e o serve junto com o Caddy.
+    build:
+      context: .
+      dockerfile: infrastructure/docker/proxy.Dockerfile
+    image: loglacto-proxy:dev
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-http://localhost}
     volumes:
-      - ./infrastructure/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./infrastructure/proxy/placeholder:/srv/frontend:ro
       - caddy_data:/data
       - caddy_config:/config
     ports:
