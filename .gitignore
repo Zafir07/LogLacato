@@ -1,0 +1,26 @@
+# Segredos
+.env
+*.pem
+*.key
+infrastructure/mqtt/certs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Firmware (PlatformIO / Arduino IDE)
+.pio/
+build/
+firmware/**/secrets.h
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

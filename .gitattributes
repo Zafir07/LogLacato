@@ -1,0 +1,7 @@
+# Scripts que rodam dentro de containers Linux precisam de fim de linha LF,
+# mesmo quando o repositório é aberto no Windows.
+*.sh   text eol=lf
+*.conf text eol=lf
+*.template text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
