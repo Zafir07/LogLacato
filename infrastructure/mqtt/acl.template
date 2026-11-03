@@ -1,0 +1,22 @@
+# Regras de acesso aos tópicos (ACL) do LogLacto.
+# __BACKEND_USER__ é trocado pelo valor de MQTT_BACKEND_USER na inicialização.
+#
+# Cada dispositivo usa como usuário MQTT o próprio device_id (ex.: esp32-001).
+# O %u nas regras "pattern" é substituído pelo usuário conectado, então um
+# dispositivo só consegue publicar nos tópicos que levam o próprio id.
+
+# ---------- Dispositivos (ESP32 e simulador) ----------
+pattern write smartmilk/device/%u/telemetry
+pattern write smartmilk/device/%u/status
+pattern write smartmilk/device/%u/alerts
+# Comandos do servidor para o dispositivo (reservado para etapas futuras)
+pattern read  smartmilk/device/%u/cmd
+
+# ---------- Backend ----------
+user __BACKEND_USER__
+topic read  smartmilk/device/+/telemetry
+topic read  smartmilk/device/+/status
+topic read  smartmilk/device/+/alerts
+topic write smartmilk/device/+/cmd
+# Usado pelo healthcheck do container
+topic read  $SYS/broker/uptime

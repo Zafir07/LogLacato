@@ -1,0 +1,81 @@
+# LogLacto — serviços de desenvolvimento
+#
+#   1. copie .env.example para .env e troque as senhas
+#   2. docker compose up -d --build
+#   3. abra http://localhost:8000/health
+#
+# O frontend (Etapa 6) roda fora do Docker com "npm run dev".
+
+name: loglacto
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Só acessível do próprio computador (para pgAdmin/DBeaver e testes).
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    environment:
+      MQTT_BACKEND_USER: ${MQTT_BACKEND_USER:?defina MQTT_BACKEND_USER no .env}
+      MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD:?defina MQTT_BACKEND_PASSWORD no .env}
+      MQTT_DEVICE_CREDENTIALS: ${MQTT_DEVICE_CREDENTIALS:-}
+    # O script gera senhas e ACL a partir do .env antes de iniciar o broker.
+    entrypoint: ["sh", "/mosquitto/config/docker-entrypoint.sh"]
+    volumes:
+      - ./infrastructure/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./infrastructure/mqtt/acl.template:/mosquitto/config/acl.template:ro
+      - ./infrastructure/mqtt/docker-entrypoint.sh:/mosquitto/config/docker-entrypoint.sh:ro
+      - mosquitto_data:/mosquitto/data
+    # Aberto na rede local: o ESP32 conecta pelo IP deste computador.
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u \"$$MQTT_BACKEND_USER\" -P \"$$MQTT_BACKEND_PASSWORD\" -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_BACKEND_USER: ${MQTT_BACKEND_USER}
+      MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD}
+      # Só para os testes de integração rodarem dentro do container.
+      # Em produção, remova: o backend não precisa das senhas dos dispositivos.
+      MQTT_DEVICE_CREDENTIALS: ${MQTT_DEVICE_CREDENTIALS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
+  mosquitto_data:
