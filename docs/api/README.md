@@ -2,16 +2,19 @@
 
 A documentação completa e interativa é gerada pelo FastAPI a partir do código:
 
-- Swagger UI: <http://localhost:8000/docs>
-- ReDoc: <http://localhost:8000/redoc>
-- Esquema OpenAPI (JSON): <http://localhost:8000/openapi.json>
+- Swagger UI: <http://localhost/docs>
+- ReDoc: <http://localhost/redoc>
+- Esquema OpenAPI (JSON): <http://localhost/openapi.json>
+
+Tudo passa pelo `proxy` (Caddy). A porta 8000 da `api` só responde no próprio
+computador, para depuração.
 
 ## Endpoints disponíveis (Etapa 1)
 
 | Método | Rota | Resposta |
 |--------|------|----------|
 | GET | `/health/live` | `200 {"status":"ok"}` enquanto o processo estiver de pé |
-| GET | `/health` | `200` se banco **e** broker respondem; `503` se algum estiver fora. O corpo mostra cada verificação, a latência do banco e o erro |
+| GET | `/health` | `200` se banco, broker **e** os serviços `svc-quality` e `svc-notifier` estão online; `503` se algo estiver fora. O corpo mostra cada verificação, a latência do banco, os contadores de cada serviço e o erro |
 
 Toda resposta traz o cabeçalho `X-Request-ID`, que aparece também no log do backend.
 

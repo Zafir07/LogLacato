@@ -1,0 +1,38 @@
+# Proxy de entrada do LogLacto (Caddy 2) — o papel do API Gateway + CloudFront
+# na arquitetura em nuvem do relatório.
+#
+# - Única porta HTTP(S) exposta: tudo passa por aqui.
+# - /api, /health, /docs e /ws vão para o serviço "api".
+# - O resto é o painel web (arquivos estáticos do frontend, Etapa 6).
+#
+# SITE_ADDRESS (no .env):
+#   http://localhost     desenvolvimento, sem certificado
+#   loglacto.exemplo.com produção: o Caddy obtém e renova o certificado TLS sozinho
+#                        (o domínio precisa apontar para este servidor, portas 80 e 443 abertas)
+
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	@api path /api/* /health /health/* /docs /docs/* /redoc /openapi.json /ws /ws/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

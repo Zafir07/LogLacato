@@ -5,10 +5,10 @@ Versão dos payloads: **1**. Broker: Eclipse Mosquitto 2 (configuração em
 
 ## 1. Conexão
 
-| Parâmetro | Dispositivo (ESP32 / simulador) | Backend |
+| Parâmetro | Dispositivo (ESP32 / simulador) | Serviços (api, quality, notifier) |
 |-----------|--------------------------------|---------|
-| Usuário | o próprio `device_id` (ex.: `esp32-001`) | `MQTT_BACKEND_USER` |
-| Client ID | o próprio `device_id` | `loglacto-backend` |
+| Usuário | o próprio `device_id` (ex.: `esp32-001`) | `backend`, `svc-quality`, `svc-notifier` |
+| Client ID | o próprio `device_id` | `loglacto-api`, `svc-quality`, `svc-notifier` |
 | Porta | 1883 na rede local; 8883 com TLS fora dela | idem |
 | Keepalive | 30 s | 30 s |
 | Clean session | `true` (quem guarda as pendentes é a fila em flash) | **`false`** (o broker guarda as mensagens se o backend cair) |
@@ -22,7 +22,13 @@ smartmilk/device/{device_id}/telemetry   dispositivo → servidor   QoS 1   não
 smartmilk/device/{device_id}/status      dispositivo → servidor   QoS 1   RETIDO
 smartmilk/device/{device_id}/alerts      dispositivo → servidor   QoS 1   não retido
 smartmilk/device/{device_id}/cmd         servidor → dispositivo   QoS 1   reservado
+smartmilk/events/{evento}                serviço → serviço        QoS 1   não retido
+smartmilk/services/{serviço}/status      serviço → api            QoS 1   RETIDO
 ```
+
+O `quality` e o `notifier` assinam com **assinatura compartilhada**
+(`$share/quality/...`, `$share/notifier/...`): com mais de uma réplica, cada mensagem
+vai para uma só.
 
 A ACL do broker garante que cada dispositivo só escreve nos tópicos com o próprio id
 (testado na Etapa 1). O backend também confere se o `device_id` do tópico é igual ao do
@@ -146,3 +152,47 @@ quem decide é o backend, com os parâmetros vigentes (ADR-09).
 | Mensagem repetida na reconexão | unicidade de (`device_id`, `msg_id`) no banco |
 | Sensor desligado ou fio solto | a leitura chega com o campo `null` e o bit de falha; o ESP32 avisa `SENSOR_FAULT` e o backend não conta o campo nos indicadores |
 | Placa desligada | nada chega: o broker publica o Last Will (`offline`) e o backend abre alerta de ausência de leitura |
+
+## 8. Eventos entre serviços (`smartmilk/events/...`)
+
+O papel do EventBridge do relatório. Só a `api` e o `quality` podem publicar eventos;
+dispositivos não (um equipamento comprometido não consegue disparar e-mails falsos).
+
+### `alerta.aberto` (implementado)
+
+```json
+{
+  "v": 1,
+  "type": "alerta.aberto",
+  "alert_id": "8812",
+  "at": "2026-11-03T12:24:10Z",
+  "severity": "critico",
+  "title": "Temperatura do leite acima do limite",
+  "description": "7,6 °C por 20 min (limite 7,0 °C, transporte).",
+  "trip_code": "VG-0142",
+  "device_id": "esp32-001",
+  "is_simulated": false
+}
+```
+
+`severity`: `info`, `atencao` ou `critico`. O `notifier` envia e-mail a partir de
+`NOTIFY_MIN_SEVERITY`, ignora `is_simulated: true` e não manda dois e-mails para o
+mesmo `alert_id`.
+
+### Previstos
+
+| Evento | Publicado por | Quando |
+|--------|---------------|--------|
+| `coleta.recusada` | api | o coletor registra a recusa de um lote |
+| `lote.recebido` | api | o laticínio confirma a recepção |
+
+## 9. Estado dos serviços (`smartmilk/services/{serviço}/status`)
+
+```json
+{ "v": 1, "service": "svc-notifier", "state": "online", "at": "2026-11-03T20:08:30Z",
+  "sent": 3, "failed": 0, "duplicate": 1 }
+```
+
+Publicado retido ao conectar e a cada 15 s. O Last Will publica
+`"state": "offline", "reason": "lwt"` se o serviço cair. A `api` considera parado
+um serviço sem batida há mais de 90 s.
