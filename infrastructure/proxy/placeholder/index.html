@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogLacto</title>
+<style>
+  :root { color-scheme: light dark; --bg: #F4F6F5; --fg: #102A23; --muted: #52645E; --card: #FFFFFF; --line: #DCE3E0; --link: #0B6B47; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0E1A16; --fg: #E6F0EC; --muted: #9DBDB1; --card: #14241F; --line: #23493D; --link: #5FD3A0; } }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); display: grid; place-items: center; min-height: 100vh; padding: 16px; box-sizing: border-box; }
+  main { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 32px; max-width: 520px; }
+  h1 { margin: 0 0 8px; font-size: 24px; }
+  p { color: var(--muted); line-height: 1.5; }
+  a { color: var(--link); font-weight: 600; }
+  ul { padding-left: 20px; line-height: 1.9; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LogLacto</h1>
+  <p>O painel web entra na Etapa 6. Por enquanto, estes endereços já funcionam:</p>
+  <ul>
+    <li><a href="/health">/health</a> — estado da API, do banco, do broker e dos serviços</li>
+    <li><a href="/docs">/docs</a> — documentação interativa da API</li>
+  </ul>
+</main>
+</body>
+</html>
