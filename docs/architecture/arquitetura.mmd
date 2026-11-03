@@ -1,30 +1,42 @@
 flowchart LR
-  subgraph CAM["Caminhão-tanque"]
-    PH["Sonda de pH<br/>+ módulo HW-828"]
-    DS["DS18B20<br/>temperatura do LEITE<br/><i>a integrar</i>"]
-    DHT["DHT22<br/>temperatura e umidade do AR"]
-    ESP["T-Beam V1.2 (ESP32)<br/>lê e valida os sensores<br/>hora NTP/GPS · fila offline<br/>Wi-Fi · MQTT"]
-    PH -- "VP / GPIO 36<br/>(divisor ÷2)" --> ESP
-    DS -- "GPIO 25<br/>OneWire" --> ESP
-    DHT -- "GPIO 13<br/>(alimentado pelo 14)" --> ESP
+  subgraph CAMPO["Camada de campo"]
+    PH["Sonda de pH<br/>+ HW-828"]
+    DS["DS18B20<br/>temp. do LEITE<br/><i>a integrar</i>"]
+    DHT["DHT22<br/>temp. e umidade do AR"]
+    ESP["T-Beam V1.2 (ESP32)<br/>lê sensores · hora NTP/GPS<br/>fila offline · Wi-Fi"]
+    COL["Coletor (app web)<br/>acidez Dornic · densidade<br/>litragem · aceite/recusa"]
+    WEB["Painel web<br/>gestão e laticínio"]
+    PH --> ESP
+    DS --> ESP
+    DHT --> ESP
   end
 
-  subgraph SRV["Servidor (Docker Compose)"]
-    MQ[("Mosquitto<br/>senha + ACL por dispositivo")]
-    API["Backend FastAPI<br/>validação · alertas · indicadores"]
-    DB[("PostgreSQL<br/>histórico imutável")]
-    MQ -- "QoS 1" --> API
-    API --> DB
+  subgraph SRV["Servidor próprio — Docker Compose"]
+    subgraph EDGE["rede edge (exposta)"]
+      PX["proxy · Caddy<br/>HTTPS · rotas<br/><i>(API Gateway + CloudFront)</i>"]
+      MQ[("mosquitto<br/>senha + ACL por cliente<br/><i>(IoT Core + EventBridge)</i>")]
+    end
+    subgraph INT["rede internal (privada)"]
+      API["api · FastAPI<br/>REST + WebSocket<br/><i>(ECS)</i>"]
+      QL["quality · worker<br/>regras e alertas<br/><i>(Lambda)</i>"]
+      NT["notifier · worker<br/>e-mail de alerta<br/><i>(SNS)</i>"]
+      DB[("postgres<br/>histórico imutável<br/><i>(RDS)</i>")]
+      BK["backup · pg_dump<br/><i>(backups do RDS)</i>"]
+    end
   end
 
-  COL["Coletor (app web)<br/>acidez Dornic · densidade<br/>litragem · aceite/recusa"]
-  WEB["Painel React<br/>dashboard · tempo real<br/>viagens · alertas · relatórios"]
-  SIM["Simulador<br/>dados SIMULADOS"]
-
-  ESP -- "Wi-Fi · MQTT QoS 1<br/>smartmilk/device/{id}/..." --> MQ
-  SIM -. "MQTT (sim-001)" .-> MQ
-  COL -- "HTTPS · REST" --> API
-  API -- "REST + WebSocket" --> WEB
+  ESP -- "MQTT QoS 1<br/>telemetria · status" --> MQ
+  COL -- "HTTPS" --> PX
+  WEB -- "HTTPS + WebSocket" --> PX
+  PX --> API
+  MQ -- "telemetria" --> QL
+  MQ -- "telemetria · status" --> API
+  QL -- "evento alerta.aberto" --> MQ
+  MQ -- "alerta.aberto" --> NT
+  API --> DB
+  QL --> DB
+  BK --> DB
+  NT -- "SMTP" --> MAIL["E-mail do laticínio<br/>e da gestão"]
 
   classDef pend stroke-dasharray: 5 4,stroke:#b45309,color:#78350f,fill:#fffbeb
   classDef hw fill:#ecfdf5,stroke:#047857,color:#064e3b
@@ -32,5 +44,5 @@ flowchart LR
   classDef ext fill:#f8fafc,stroke:#475569,color:#0f172a
   class PH,DHT,ESP hw
   class DS pend
-  class MQ,API,DB srv
-  class COL,WEB,SIM ext
+  class PX,MQ,API,QL,NT,DB,BK srv
+  class COL,WEB,MAIL ext

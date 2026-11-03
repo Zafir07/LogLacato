@@ -4,6 +4,9 @@
 *.key
 infrastructure/mqtt/certs/
 
+# Backups do banco (copie para fora do servidor)
+backups/
+
 # Python
 .venv/
 __pycache__/
