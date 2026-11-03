@@ -1,0 +1,36 @@
+flowchart LR
+  subgraph CAM["Caminhão-tanque"]
+    PH["Sonda de pH<br/>+ módulo HW-828"]
+    DS["DS18B20<br/>temperatura do LEITE<br/><i>a integrar</i>"]
+    DHT["DHT22<br/>temperatura e umidade do AR"]
+    ESP["T-Beam V1.2 (ESP32)<br/>lê e valida os sensores<br/>hora NTP/GPS · fila offline<br/>Wi-Fi · MQTT"]
+    PH -- "VP / GPIO 36<br/>(divisor ÷2)" --> ESP
+    DS -- "GPIO 25<br/>OneWire" --> ESP
+    DHT -- "GPIO 13<br/>(alimentado pelo 14)" --> ESP
+  end
+
+  subgraph SRV["Servidor (Docker Compose)"]
+    MQ[("Mosquitto<br/>senha + ACL por dispositivo")]
+    API["Backend FastAPI<br/>validação · alertas · indicadores"]
+    DB[("PostgreSQL<br/>histórico imutável")]
+    MQ -- "QoS 1" --> API
+    API --> DB
+  end
+
+  COL["Coletor (app web)<br/>acidez Dornic · densidade<br/>litragem · aceite/recusa"]
+  WEB["Painel React<br/>dashboard · tempo real<br/>viagens · alertas · relatórios"]
+  SIM["Simulador<br/>dados SIMULADOS"]
+
+  ESP -- "Wi-Fi · MQTT QoS 1<br/>smartmilk/device/{id}/..." --> MQ
+  SIM -. "MQTT (sim-001)" .-> MQ
+  COL -- "HTTPS · REST" --> API
+  API -- "REST + WebSocket" --> WEB
+
+  classDef pend stroke-dasharray: 5 4,stroke:#b45309,color:#78350f,fill:#fffbeb
+  classDef hw fill:#ecfdf5,stroke:#047857,color:#064e3b
+  classDef srv fill:#eff6ff,stroke:#1d4ed8,color:#1e3a8a
+  classDef ext fill:#f8fafc,stroke:#475569,color:#0f172a
+  class PH,DHT,ESP hw
+  class DS pend
+  class MQ,API,DB srv
+  class COL,WEB,SIM ext
