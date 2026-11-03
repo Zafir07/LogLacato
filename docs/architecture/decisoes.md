@@ -16,6 +16,7 @@ aponta para a nova.
 | [08](#adr-08) | Um usuário MQTT por dispositivo, com ACL por tópico | Aceita |
 | [09](#adr-09) | Limites de qualidade são parâmetros configuráveis com fonte | Aceita |
 | [10](#adr-10) | O simulador é um dispositivo cadastrado como simulado | Aceita |
+| [11](#adr-11) | Arquitetura de serviços do Capítulo 8 em servidor próprio, sem AWS | Aceita |
 
 ---
 
@@ -139,7 +140,7 @@ usando a melhor fonte disponível, informada em `time_source`:
 ## ADR-06 — Wi-Fi direto até um Mosquitto próprio
 
 **Contexto.** O relatório propõe LoRa até um gateway e AWS IoT Core. O grupo escolheu
-**Wi-Fi direto**, com uma placa só. Para a disciplina, o sistema precisa rodar em um
+**Wi-Fi direto**, com uma placa só, e servidor próprio em vez da AWS (ADR-11). Para a disciplina, o sistema precisa rodar em um
 computador comum, sem custo de nuvem.
 
 **Decisão.** A T-Beam conecta no Wi-Fi (roteador, ou hotspot do celular no caminhão)
@@ -238,3 +239,40 @@ leitura é rejeitada.
 - O simulador testa o fluxo completo (broker, ACL, backend, banco, WebSocket).
 - Indicadores e relatórios filtram `is_simulated = false` por padrão. O painel mostra
   uma faixa **SIMULADO** sempre que exibe esses dados.
+
+---
+
+<a id="adr-11"></a>
+## ADR-11 — Arquitetura de serviços do Capítulo 8 em servidor próprio, sem AWS
+
+**Contexto.** O Capítulo 8 do relatório propõe a arquitetura em serviços gerenciados da
+AWS (IoT Core, API Gateway, ECS, Lambda, EventBridge, SNS, RDS, S3, Cognito, CloudWatch).
+O grupo quer **a mesma arquitetura de serviços, mas fora da AWS**: sem conta na nuvem,
+sem custo e rodando num servidor próprio.
+
+**Decisão.** Cada serviço da AWS vira um container com um equivalente aberto, no mesmo
+Docker Compose (tabela completa em [servicos.md](servicos.md)):
+
+| AWS | LogLacto |
+|-----|----------|
+| API Gateway + CloudFront | `proxy` (Caddy) |
+| ECS | `api` (FastAPI) |
+| Lambda de qualidade | `quality` (worker) |
+| SNS | `notifier` (worker, e-mail por SMTP) |
+| IoT Core + EventBridge | `mosquitto` (telemetria + `smartmilk/events/...`) |
+| RDS + backups | `postgres` + `backup` |
+| VPC | rede Docker `internal` |
+| IAM | usuário MQTT e ACL por serviço |
+| CloudWatch | logs dos containers + `/health` com o estado de cada serviço |
+
+`api`, `quality` e `notifier` compartilham o mesmo código Python e a mesma imagem,
+mudando só o comando de início.
+
+**Consequências.**
+- Nenhuma dependência da AWS: o sistema inteiro sobe com `docker compose up`.
+- Cada serviço tem credencial própria e só acessa o que precisa (testado).
+- Um serviço que cai aparece no `/health` (Last Will do MQTT) e no healthcheck do Docker.
+- Perde-se a escala e a alta disponibilidade gerenciadas, e o SMS do SNS (só e-mail).
+  Os limites estão em [servicos.md § 4](servicos.md#4-o-que-fica-diferente-da-aws).
+- O Capítulo 8 do relatório precisa ser atualizado para descrever esta versão (ou citar
+  a AWS como alternativa de implantação).
