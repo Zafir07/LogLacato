@@ -9,6 +9,9 @@ EVENTS_ALL = "smartmilk/events/#"
 EVENT_ALERT_OPENED = "smartmilk/events/alerta.aberto"
 EVENT_COLLECTION_REJECTED = "smartmilk/events/coleta.recusada"
 EVENT_LOT_RECEIVED = "smartmilk/events/lote.recebido"
+EVENT_ALERT_CLOSED = "smartmilk/events/alerta.encerrado"
+# A api grava a leitura e avisa o quality (só leituras novas, nunca duplicatas)
+EVENT_READING_STORED = "smartmilk/events/leitura.gravada"
 
 # Estado de cada serviço interno (retido, com Last Will)
 SERVICES_STATUS = "smartmilk/services/+/status"
