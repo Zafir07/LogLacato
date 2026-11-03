@@ -57,6 +57,9 @@ class Worker:
     def stats(self) -> dict:
         return {}
 
+    def tick(self) -> None:
+        """Chamado a cada batida enquanto conectado (verificações periódicas)."""
+
     # -- execução ------------------------------------------------------------
     def stop(self, *_args) -> None:
         self._stop.set()
@@ -70,6 +73,7 @@ class Worker:
         beat = heartbeat_file(self.name)
         while not self._stop.is_set():
             if self.mqtt.connected:
+                self.tick()
                 self.mqtt.publish_status(**self.stats())
                 beat.write_text(str(time.time()))
                 self._stop.wait(HEARTBEAT_S)

@@ -39,13 +39,15 @@ services:
 
   # ------------------------------------------------------------ entrada
   proxy:
-    image: caddy:2
+    # Compila o painel React (frontend/) e o serve junto com o Caddy.
+    build:
+      context: .
+      dockerfile: infrastructure/docker/proxy.Dockerfile
+    image: loglacto-proxy:dev
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-http://localhost}
     volumes:
-      - ./infrastructure/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./infrastructure/proxy/placeholder:/srv/frontend:ro
       - caddy_data:/data
       - caddy_config:/config
     ports:
@@ -65,6 +67,12 @@ services:
       MQTT_BACKEND_USER: ${MQTT_BACKEND_USER}
       MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD}
       REQUIRED_SERVICES: svc-quality,svc-notifier
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      LIVE_WINDOW_S: ${LIVE_WINDOW_S:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       # Só para os testes de integração rodarem dentro do container.
       # Em produção, remova: a API não precisa das senhas dos dispositivos nem dos workers.
@@ -72,6 +80,14 @@ services:
       MQTT_QUALITY_PASSWORD: ${MQTT_QUALITY_PASSWORD}
       MQTT_NOTIFIER_PASSWORD: ${MQTT_NOTIFIER_PASSWORD}
       MAILPIT_URL: http://mailpit:8025
+    volumes:
+      - files:/data/files
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +105,11 @@ services:
       <<: *common-env
       MQTT_SERVICE_USER: svc-quality
       MQTT_SERVICE_PASSWORD: ${MQTT_QUALITY_PASSWORD:?defina MQTT_QUALITY_PASSWORD no .env}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      QUALITY_OPEN_AFTER: ${QUALITY_OPEN_AFTER:-2}
+      QUALITY_CLOSE_AFTER: ${QUALITY_CLOSE_AFTER:-3}
+      NO_DATA_MINUTES: ${NO_DATA_MINUTES:-5}
+      INVALID_STREAK: ${INVALID_STREAK:-3}
     healthcheck:
       test: ["CMD", "python", "-m", "app.workers.healthcheck", "svc-quality"]
       interval: 15s
@@ -96,8 +117,8 @@ services:
       retries: 3
       start_period: 20s
     depends_on:
-      mosquitto:
-        condition: service_started
+      api:
+        condition: service_healthy
     networks: [internal]
 
   notifier:
@@ -193,6 +214,21 @@ services:
         condition: service_healthy
     networks: [internal]
 
+  # ------------------------------------------------------------ simulador (opcional)
+  # docker compose --profile sim up -d simulator
+  simulator:
+    <<: *backend-image
+    profiles: [sim]
+    restart: "no"
+    command: ["python", "-m", "app.tools.simulator", "live", "--scenario", "${SIM_SCENARIO:-demo}"]
+    environment:
+      <<: *common-env
+      MQTT_DEVICE_CREDENTIALS: ${MQTT_DEVICE_CREDENTIALS:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [internal]
+
   # ------------------------------------------------------------ desenvolvimento
   mailpit:
     image: axllent/mailpit:latest
@@ -210,3 +246,4 @@ volumes:
   mosquitto_data:
   caddy_data:
   caddy_config:
+  files:

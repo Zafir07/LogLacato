@@ -163,16 +163,20 @@ def test_servicos_internos_aparecem_online_no_health():
     assert services["svc-notifier"]["state"] == "online"
 
 
-def test_quality_recebe_telemetria_dos_dispositivos():
+def test_quality_recebe_leituras_gravadas_e_nao_a_telemetria_crua():
     dev, senha = next(iter(_device_credentials().items()))
-    marca = uuid.uuid4().hex.encode()
+    marca_crua, marca_evento = uuid.uuid4().hex.encode(), uuid.uuid4().hex.encode()
     with _Cliente(*_service("svc-quality")) as q:
         assert q.conectou.is_set()
         q.c.subscribe("smartmilk/device/+/telemetry", qos=1)
+        q.c.subscribe("smartmilk/events/leitura.gravada", qos=1)
         time.sleep(0.3)
         with _Cliente(dev, senha) as d:
-            d.c.publish(f"smartmilk/device/{dev}/telemetry", marca, qos=1).wait_for_publish(3)
-        assert _espera(lambda: any(p == marca for _, p in q.recebidas))
+            d.c.publish(f"smartmilk/device/{dev}/telemetry", marca_crua, qos=1).wait_for_publish(3)
+        with _Cliente(settings.mqtt_backend_user, settings.mqtt_backend_password) as api:
+            api.c.publish("smartmilk/events/leitura.gravada", marca_evento, qos=1).wait_for_publish(3)
+        assert _espera(lambda: any(p == marca_evento for _, p in q.recebidas))
+        assert all(p != marca_crua for _, p in q.recebidas)
 
 
 def test_quality_nao_se_passa_por_dispositivo():
