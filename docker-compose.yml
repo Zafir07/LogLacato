@@ -157,7 +157,12 @@ services:
       MQTT_QUALITY_PASSWORD: ${MQTT_QUALITY_PASSWORD:?defina MQTT_QUALITY_PASSWORD no .env}
       MQTT_NOTIFIER_PASSWORD: ${MQTT_NOTIFIER_PASSWORD:?defina MQTT_NOTIFIER_PASSWORD no .env}
       MQTT_DEVICE_CREDENTIALS: ${MQTT_DEVICE_CREDENTIALS:-}
-    # O script gera senhas e ACL a partir do .env antes de iniciar o broker.
+      # Ponte opcional com um broker na nuvem (T-Beam longe do servidor, pelo 4G)
+      MQTT_BRIDGE_HOST: ${MQTT_BRIDGE_HOST:-}
+      MQTT_BRIDGE_PORT: ${MQTT_BRIDGE_PORT:-8883}
+      MQTT_BRIDGE_USER: ${MQTT_BRIDGE_USER:-}
+      MQTT_BRIDGE_PASSWORD: ${MQTT_BRIDGE_PASSWORD:-}
+    # O script gera senhas, ACL e a ponte (se houver) a partir do .env antes de iniciar o broker.
     entrypoint: ["sh", "/mosquitto/config/docker-entrypoint.sh"]
     volumes:
       - ./infrastructure/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
