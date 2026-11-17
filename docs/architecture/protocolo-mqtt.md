@@ -98,7 +98,12 @@ Por ser retido, quem assina o tópico recebe na hora o último estado conhecido.
 }
 ```
 
+O firmware 0.2 acrescenta campos informativos, que o backend guarda junto com o estado:
+`wifi_ssid`, `broker` (`local` ou `nuvem`) e `battery` (`{"percent": 97, "charging": true}`).
+
 Quando a conexão cai sem aviso, o broker publica o Last Will (`state: "offline"`).
+A placa fecha o socket sem mandar DISCONNECT quando perde o Wi-Fi, justamente para o
+broker publicar o Last Will.
 
 ## 5. `alerts` — falhas vistas pelo próprio dispositivo
 
