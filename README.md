@@ -17,12 +17,13 @@ roda num container, num servidor próprio ([equivalência AWS → LogLacto](docs
 | Etapa | | |
 |-------|---|---|
 | 1. Arquitetura e estrutura | ✅ | 8 serviços em Docker (proxy, api, quality, notifier, broker, banco, backup, mailpit), ACL por cliente, alerta → e-mail funcionando, 39 testes |
-| 2. Banco de dados | ⏳ | |
-| 3. Backend, APIs e autenticação | ⏳ | |
-| 4. MQTT, telemetria e simulador | ⏳ | |
-| 5. Firmware da T-Beam | ⏳ | falta integrar a DS18B20 |
-| 6. Frontend | ⏳ | |
-| 7–9. Integração, testes, implantação | ⏳ | |
+| 2. Banco de dados | ✅ | PostgreSQL com 12 tabelas, migration Alembic (sobe e desce), unicidade de leitura, faixas físicas e telemetria somente-inserção ([banco](infrastructure/database/README.md)) |
+| 3. Backend, APIs e autenticação | ✅ | login JWT, senhas Argon2, perfis, cadastros, relatórios; testes de API passando |
+| 4. MQTT, telemetria e simulador | ✅ | ingestão MQTT → banco sem duplicar, serviço de qualidade, WebSocket, simulador |
+| 5. Firmware da T-Beam | 🔧 | firmware online/offline escrito e testado no PC ([firmware/esp32](firmware/esp32/README.md)); falta teste de bancada e a DS18B20 |
+| 6. Frontend | ✅ | painel React (tempo real, viagens, alertas, relatórios, coletas) |
+| 7. Integração | 🔧 | firmware → Mosquitto → api → PostgreSQL testado no PC, inclusive pela ponte com a nuvem; falta com a placa |
+| 8–9. Testes de falha, implantação | ⏳ | |
 
 Critérios de cada etapa: [docs/architecture/etapas.md](docs/architecture/etapas.md).
 
