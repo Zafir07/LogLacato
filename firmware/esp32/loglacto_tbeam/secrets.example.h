@@ -13,6 +13,7 @@
 // ---------------------------------------------------------------- redes Wi-Fi
 // A placa tenta na ordem e fica na primeira que responder.
 // Ponha a rede onde o servidor está e o roteador do celular (para usar o 4G).
+// Para testar só o modo offline, deixe uma única linha { nullptr, nullptr }.
 struct RedeWifi { const char* ssid; const char* senha; };
 static const RedeWifi REDES_WIFI[] = {
   { "Wi-Fi-da-casa-ou-fazenda", "senha-do-wifi" },
