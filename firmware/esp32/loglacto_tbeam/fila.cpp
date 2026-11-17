@@ -30,7 +30,10 @@ void Fila::salvarCursor() {
 }
 
 uint32_t Fila::contarLinhas(uint32_t seg, long desde) {
-  char cam[20], buf[256];
+  // Bloco grande: cada leitura abre o arquivo no flash, então quanto menos leituras melhor
+  // (com a fila cheia, a contagem no boot lê ~1 MB).
+  static char buf[2048];
+  char cam[20];
   caminho(seg, cam);
   uint32_t linhas = 0;
   long pos = desde;
@@ -48,7 +51,7 @@ bool Fila::iniciar() {
   primeiro_ = 1;
   posicao_ = 0;
   char txt[32];
-  long n = arm_->ler(CAMINHO_CURSOR, 0, txt, sizeof(txt) - 1);
+  long n = arm_->existe(CAMINHO_CURSOR) ? arm_->ler(CAMINHO_CURSOR, 0, txt, sizeof(txt) - 1) : -1;
   if (n > 0) {
     txt[n] = 0;
     unsigned long p = 0;

@@ -18,8 +18,8 @@ class ArmazenamentoLittleFS : public Armazenamento {
     return t;
   }
 
+  // Sem exists() antes: a fila só lê arquivos que ela sabe que existem (uma abertura a menos).
   long ler(const char* c, long pos, char* buf, size_t n) override {
-    if (!LittleFS.exists(c)) return -1;
     File f = LittleFS.open(c, "r");
     if (!f) return -1;
     if (pos >= (long)f.size()) { f.close(); return 0; }
