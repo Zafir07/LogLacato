@@ -47,8 +47,8 @@
 #include <OneWire.h>
 #endif
 
-static const int N_REDES = sizeof(REDES_WIFI) / sizeof(REDES_WIFI[0]);
-static const int N_BROKERS = sizeof(BROKERS) / sizeof(BROKERS[0]);
+// Quantas redes e brokers estão preenchidos (uma linha { nullptr, ... } = nenhum: só modo offline)
+int N_REDES = 0, N_BROKERS = 0;
 static const int HIST_N = 60;   // 60 leituras x 5 s = 5 minutos na página da placa
 
 // ---------------------------------------------------------------- objetos
@@ -644,6 +644,14 @@ void setup() {
   fila.iniciar();
   Serial.printf("[fila] %lu leitura(s) guardada(s) de antes; capacidade %lu\n",
                 (unsigned long)fila.pendentes(), (unsigned long)fila.capacidade());
+
+  for (const RedeWifi& r : REDES_WIFI)
+    if (r.ssid && r.ssid[0]) N_REDES++;
+    else break;
+  for (const BrokerMqtt& b : BROKERS)
+    if (b.host && b.host[0]) N_BROKERS++;
+    else break;
+  if (N_REDES == 0) Serial.println("[wifi] nenhuma rede no secrets.h: só modo offline (fila + Wi-Fi da placa)");
 
   montarTopicos();
   redeTls.setCACert(CA_CERT);

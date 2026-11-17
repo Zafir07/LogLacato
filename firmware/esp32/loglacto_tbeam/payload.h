@@ -24,8 +24,9 @@ inline double arred(double v, int casas) {
   return round(v * f) / f;
 }
 
+// T&& e não T: o campo do ArduinoJson 7 não pode ser copiado (o compilador do ESP32 reclama)
 template <typename T>
-inline void numeroOuNulo(T campo, float v, int casas) {
+inline void numeroOuNulo(T&& campo, float v, int casas) {
   if (isnan(v)) campo.set(nullptr);
   else campo.set(arred(v, casas));
 }
